@@ -9,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import com.immedio.toevent.MainActivity
 import com.immedio.toevent.domain.model.Event
 import com.immedio.toevent.domain.model.UrgencyLevel
+import com.immedio.toevent.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -78,7 +79,7 @@ class NotificationService @Inject constructor(
         )
 
         val builder = NotificationCompat.Builder(context, NotificationChannels.NEXT_EVENT)
-            .setSmallIcon(android.R.drawable.ic_menu_my_calendar)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(countdownText)
             .setOngoing(true)
@@ -147,7 +148,7 @@ class NotificationService @Inject constructor(
         )
 
         val builder = NotificationCompat.Builder(context, NotificationChannels.EVENT_ALERTS)
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
             .setAutoCancel(true)

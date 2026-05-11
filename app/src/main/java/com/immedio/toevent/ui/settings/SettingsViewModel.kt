@@ -66,6 +66,13 @@ class SettingsViewModel @Inject constructor(
     val travelTimeEnabled: StateFlow<Boolean> = preferences.travelTimeEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val floatingChipEnabled: StateFlow<Boolean> = preferences.floatingChipEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setFloatingChipEnabled(value: Boolean) {
+        viewModelScope.launch { preferences.setFloatingChipEnabled(value) }
+    }
+
     /**
      * Set active surface with at-least-one enforcement.
      * Returns false if the change would leave no surface active.

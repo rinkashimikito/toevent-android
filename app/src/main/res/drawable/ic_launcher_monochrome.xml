@@ -4,17 +4,19 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Calendar page body (centered in safe zone) -->
+    <!-- Calendar outline -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M30,28 h48 a4,4 0 0,1 4,4 v44 a4,4 0 0,1 -4,4 h-48 a4,4 0 0,1 -4,-4 v-44 a4,4 0 0,1 4,-4 z" />
+        android:pathData="M30,28 h48 a4,4 0 0,1 4,4 v44 a4,4 0 0,1 -4,4 h-48 a4,4 0 0,1 -4,-4 v-44 a4,4 0 0,1 4,-4 z"
+        android:strokeWidth="2"
+        android:strokeColor="#000000"
+        android:fillColor="#00000000" />
 
-    <!-- Calendar header bar -->
+    <!-- Header bar -->
     <path
-        android:fillColor="#E53935"
+        android:fillColor="#000000"
         android:pathData="M30,28 h48 a4,4 0 0,1 4,4 v10 h-56 v-10 a4,4 0 0,1 4,-4 z" />
 
-    <!-- Calendar binding dots -->
+    <!-- Binding dots -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M40,26 a2,2 0 1,1 0,4 a2,2 0 1,1 0,-4 z" />
@@ -22,29 +24,23 @@
         android:fillColor="#FFFFFF"
         android:pathData="M68,26 a2,2 0 1,1 0,4 a2,2 0 1,1 0,-4 z" />
 
-    <!-- Clock circle -->
+    <!-- Clock -->
     <path
         android:pathData="M54,57 m-14,0 a14,14 0,1 1,28 0 a14,14 0,1 1,-28 0"
-        android:strokeWidth="2.5"
-        android:strokeColor="#1565C0"
-        android:fillColor="#E3F2FD" />
-
-    <!-- Clock hour hand -->
+        android:strokeWidth="2"
+        android:strokeColor="#000000"
+        android:fillColor="#00000000" />
     <path
         android:pathData="M54,57 L54,48"
         android:strokeWidth="2.5"
-        android:strokeColor="#1565C0"
+        android:strokeColor="#000000"
         android:strokeLineCap="round" />
-
-    <!-- Clock minute hand -->
     <path
         android:pathData="M54,57 L62,53"
         android:strokeWidth="2"
-        android:strokeColor="#1565C0"
+        android:strokeColor="#000000"
         android:strokeLineCap="round" />
-
-    <!-- Clock center dot -->
     <path
-        android:fillColor="#1565C0"
+        android:fillColor="#000000"
         android:pathData="M54,57 m-2,0 a2,2 0 1,1 4,0 a2,2 0 1,1 -4,0" />
 </vector>

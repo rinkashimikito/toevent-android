@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Calendar outline -->
+    <path
+        android:pathData="M4,4 h16 a2,2 0 0,1 2,2 v14 a2,2 0 0,1 -2,2 h-16 a2,2 0 0,1 -2,-2 v-14 a2,2 0 0,1 2,-2 z"
+        android:strokeWidth="1.5"
+        android:strokeColor="#FFFFFF"
+        android:fillColor="#00000000" />
+
+    <!-- Header line -->
+    <path
+        android:pathData="M2,9 h20"
+        android:strokeWidth="1.5"
+        android:strokeColor="#FFFFFF" />
+
+    <!-- Clock circle bottom-right -->
+    <path
+        android:pathData="M15,16 m-5,0 a5,5 0,1 1,10 0 a5,5 0,1 1,-10 0"
+        android:strokeWidth="1.5"
+        android:strokeColor="#FFFFFF"
+        android:fillColor="#00000000" />
+
+    <!-- Clock hands -->
+    <path
+        android:pathData="M15,16 L15,13.5"
+        android:strokeWidth="1.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M15,16 L17.5,15"
+        android:strokeWidth="1.2"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+</vector>
