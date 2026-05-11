@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,29 +19,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,10 +52,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.immedio.toevent.BuildConfig
@@ -64,6 +64,22 @@ import com.immedio.toevent.domain.model.CalendarInfo
 import com.immedio.toevent.domain.model.CalendarProviderType
 import com.immedio.toevent.domain.model.TimeDisplayFormat
 import kotlin.math.roundToInt
+
+// iOS design constants
+private val iOSBackground = Color(0xFFF2F2F7)
+private val iOSSurface = Color.White
+private val iOSSeparator = Color(0xFFC6C6C8)
+private val iOSBlue = Color(0xFF007AFF)
+private val iOSGreen = Color(0xFF34C759)
+private val iOSGray = Color(0xFF8E8E93)
+private val iOSUncheckedTrack = Color(0xFFE5E5EA)
+
+private val sectionCornerRadius = 10.dp
+private val rowMinHeight = 44.dp
+private val rowHorizontalPadding = 16.dp
+private val sectionSpacing = 35.dp
+private val separatorThickness = 0.5.dp
+private val separatorStartPadding = 16.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,69 +113,77 @@ fun SettingsScreen(
 
     LaunchedEffect(Unit) { calendarViewModel.refreshCalendars() }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
     Scaffold(
         topBar = {
-            LargeTopAppBar(
-                title = { Text("Settings") },
+            TopAppBar(
+                title = {
+                    Text(
+                        "Settings",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = iOSBlue,
+                        )
                     }
                 },
-                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = iOSBackground,
+                ),
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = iOSBackground,
     ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            // ── Appearance ──
-            item { SectionHeader("Appearance") }
-
+            // -- Appearance --
+            item { IOSSectionHeader("APPEARANCE") }
             item {
-                SectionCard {
-                    DropdownRow(
+                IOSSectionCard {
+                    IOSNavigationRow(
                         title = "Theme",
+                        value = themeMode.label,
                         options = com.immedio.toevent.domain.model.ThemeMode.entries.map { it.label },
-                        selectedLabel = themeMode.label,
                         onSelect = { index ->
                             settingsViewModel.setThemeMode(com.immedio.toevent.domain.model.ThemeMode.entries[index])
                         },
+                        showSeparator = false,
                     )
                 }
             }
 
-            // ── Display ──
-            item { SectionHeader("Display") }
-
+            // -- Display --
+            item { IOSSectionHeader("DISPLAY") }
             item {
-                SectionCard {
-                    SwitchRow(
+                IOSSectionCard {
+                    IOSToggleRow(
                         title = "Notification",
-                        subtitle = "Show events in notification shade",
                         checked = activeSurface.notificationEnabled,
                         onCheckedChange = { enabled ->
                             if (enabled) settingsViewModel.enableNotification()
                             else settingsViewModel.tryDisableNotification()
                         },
                     )
-                    SwitchRow(
+                    IOSSeparator()
+                    IOSToggleRow(
                         title = "Widget",
-                        subtitle = "Show events on home screen",
                         checked = activeSurface.widgetEnabled,
                         onCheckedChange = { enabled ->
                             if (enabled) settingsViewModel.enableWidget()
                             else settingsViewModel.tryDisableWidget()
                         },
                     )
-                    SwitchRow(
-                        title = "Floating countdown chip",
-                        subtitle = "Overlay countdown on other apps",
+                    IOSSeparator()
+                    IOSToggleRow(
+                        title = "Floating Chip",
                         checked = floatingChipEnabled,
                         onCheckedChange = { enabled ->
                             if (enabled && !Settings.canDrawOverlays(context)) {
@@ -176,25 +200,27 @@ fun SettingsScreen(
                 }
             }
 
+            item { Spacer(Modifier.height(sectionSpacing)) }
             item {
-                SectionCard {
-                    RadioGroupRow(
-                        title = "Time format",
+                IOSSectionCard {
+                    IOSNavigationRow(
+                        title = "Time Format",
+                        value = timeDisplayFormat.label,
                         options = TimeDisplayFormat.entries.map { it.label },
-                        selectedIndex = TimeDisplayFormat.entries.indexOf(timeDisplayFormat),
                         onSelect = { index ->
                             settingsViewModel.setTimeDisplayFormat(TimeDisplayFormat.entries[index])
                         },
+                        showSeparator = false,
                     )
                 }
             }
 
             if (timeDisplayFormat == TimeDisplayFormat.COUNTDOWN || timeDisplayFormat == TimeDisplayFormat.BOTH) {
+                item { Spacer(Modifier.height(sectionSpacing)) }
                 item {
-                    SectionCard {
-                        SwitchRow(
-                            title = "Natural language",
-                            subtitle = "Show \"in a few minutes\" instead of exact time",
+                    IOSSectionCard {
+                        IOSToggleRow(
+                            title = "Natural Language",
                             checked = useNaturalLanguage,
                             onCheckedChange = { settingsViewModel.setUseNaturalLanguage(it) },
                         )
@@ -202,61 +228,61 @@ fun SettingsScreen(
                 }
             }
 
+            item { Spacer(Modifier.height(sectionSpacing)) }
             item {
-                SectionCard {
-                    SwitchRow(
-                        title = "Privacy mode",
-                        subtitle = "Hide event details on lock screen",
+                IOSSectionCard {
+                    IOSToggleRow(
+                        title = "Privacy Mode",
                         checked = privacyMode,
                         onCheckedChange = { settingsViewModel.setPrivacyMode(it) },
                     )
-                    SwitchRow(
-                        title = "Hide all-day events",
-                        subtitle = "Don't show events without a specific time",
+                    IOSSeparator()
+                    IOSToggleRow(
+                        title = "Hide All-Day Events",
                         checked = hideAllDayEvents,
                         onCheckedChange = { settingsViewModel.setHideAllDayEvents(it) },
                     )
                 }
             }
 
-            // ── Notifications ──
-            item { SectionHeader("Notifications") }
-
+            // -- Notifications --
+            item { IOSSectionHeader("NOTIFICATIONS") }
             item {
-                SectionCard {
-                    SwitchRow(
-                        title = "Enable notifications",
-                        subtitle = "Get reminders before events start",
+                IOSSectionCard {
+                    IOSToggleRow(
+                        title = "Notifications",
                         checked = notificationsEnabled,
                         onCheckedChange = { settingsViewModel.setNotificationsEnabled(it) },
                     )
-
                     if (notificationsEnabled) {
+                        IOSSeparator()
                         val reminderOptions = listOf(1, 2, 3, 5, 10, 15, 30)
-                        DropdownRow(
-                            title = "Reminder time",
-                            selectedLabel = "$reminderMinutes min before",
+                        IOSNavigationRow(
+                            title = "Reminder",
+                            value = "$reminderMinutes min before",
                             options = reminderOptions.map { "$it min" },
                             onSelect = { index ->
                                 settingsViewModel.setReminderMinutes(reminderOptions[index])
                             },
                         )
+                        IOSSeparator()
                         val soundOptions = listOf("default", "subtle", "urgent", "none")
                         val soundLabels = listOf("Default", "Subtle", "Urgent", "None")
-                        DropdownRow(
+                        IOSNavigationRow(
                             title = "Sound",
-                            selectedLabel = soundLabels[soundOptions.indexOf(notificationSound).coerceAtLeast(0)],
+                            value = soundLabels[soundOptions.indexOf(notificationSound).coerceAtLeast(0)],
                             options = soundLabels,
                             onSelect = { index ->
                                 settingsViewModel.setNotificationSound(soundOptions[index])
                             },
+                            showSeparator = false,
                         )
                     }
                 }
             }
 
-            // ── Calendars ──
-            item { SectionHeader("Calendars") }
+            // -- Calendars --
+            item { IOSSectionHeader("CALENDARS") }
 
             val grouped = calendars.groupBy { it.providerType }
             val enabledIds = enabledCalendarIds ?: calendars.map { it.id }.toSet()
@@ -266,76 +292,90 @@ fun SettingsScreen(
 
                 item(key = "header_${providerType.name}") {
                     Text(
-                        text = providerType.displayName,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 24.dp, top = 12.dp, bottom = 4.dp),
+                        text = providerType.displayName.uppercase(),
+                        fontSize = 13.sp,
+                        color = iOSGray,
+                        modifier = Modifier.padding(start = 16.dp, bottom = 6.dp, top = 8.dp),
                     )
                 }
 
                 item(key = "card_${providerType.name}") {
-                    SectionCard {
-                        cals.forEach { cal ->
-                            CalendarRow(
+                    IOSSectionCard {
+                        cals.forEachIndexed { index, cal ->
+                            IOSCalendarRow(
                                 calendar = cal,
                                 enabled = cal.id in enabledIds,
                                 onToggle = { calendarViewModel.toggleCalendar(cal.id, it) },
                             )
+                            if (index < cals.size - 1) {
+                                IOSSeparator()
+                            }
                         }
                     }
                 }
             }
 
             item {
-                OutlinedButton(
-                    onClick = onAddAccount,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(sectionCornerRadius))
+                        .background(iOSSurface)
+                        .clickable { onAddAccount() }
+                        .defaultMinSize(minHeight = rowMinHeight)
+                        .padding(horizontal = rowHorizontalPadding),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add Account")
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        tint = iOSBlue,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "Add Account",
+                        color = iOSBlue,
+                        fontSize = 17.sp,
+                    )
                 }
             }
 
-            // ── Sync ──
-            item { SectionHeader("Sync") }
-
+            // -- Sync --
+            item { IOSSectionHeader("SYNC") }
             item {
-                SectionCard {
-                    RadioGroupRow(
-                        title = "Background mode",
+                IOSSectionCard {
+                    IOSNavigationRow(
+                        title = "Background Mode",
+                        value = backgroundMode.label,
                         options = BackgroundMode.entries.map { it.label },
-                        selectedIndex = BackgroundMode.entries.indexOf(backgroundMode),
                         onSelect = { index ->
                             settingsViewModel.setBackgroundMode(BackgroundMode.entries[index])
                         },
                     )
-                }
-            }
-
-            item {
-                SectionCard {
+                    IOSSeparator()
                     val lookaheadOptions = listOf(12.0 * 3600, 24.0 * 3600, 48.0 * 3600, 7.0 * 86400)
                     val lookaheadLabels = listOf("12 hours", "24 hours", "48 hours", "7 days")
-                    DropdownRow(
+                    IOSNavigationRow(
                         title = "Lookahead",
-                        selectedLabel = lookaheadLabels[lookaheadOptions.indexOf(lookahead).coerceAtLeast(0)],
+                        value = lookaheadLabels[lookaheadOptions.indexOf(lookahead).coerceAtLeast(0)],
                         options = lookaheadLabels,
                         onSelect = { index ->
                             settingsViewModel.setLookahead(lookaheadOptions[index])
                         },
+                        showSeparator = false,
                     )
                 }
             }
 
-            // ── Advanced ──
-            item { SectionHeader("Advanced") }
-
+            // -- Advanced --
+            item { IOSSectionHeader("ADVANCED") }
             item {
-                SectionCard {
-                    SliderRow(
-                        title = "Imminent threshold",
+                IOSSectionCard {
+                    IOSSliderRow(
+                        title = "Imminent",
                         value = (urgencyThresholds.imminent / 60).toFloat(),
                         valueRange = 1f..15f,
                         steps = 13,
@@ -346,8 +386,9 @@ fun SettingsScreen(
                             )
                         },
                     )
-                    SliderRow(
-                        title = "Soon threshold",
+                    IOSSeparator()
+                    IOSSliderRow(
+                        title = "Soon",
                         value = (urgencyThresholds.soon / 60).toFloat(),
                         valueRange = 5f..30f,
                         steps = 24,
@@ -358,8 +399,9 @@ fun SettingsScreen(
                             )
                         },
                     )
-                    SliderRow(
-                        title = "Approaching threshold",
+                    IOSSeparator()
+                    IOSSliderRow(
+                        title = "Approaching",
                         value = (urgencyThresholds.approaching / 60).toFloat(),
                         valueRange = 10f..60f,
                         steps = 49,
@@ -373,41 +415,43 @@ fun SettingsScreen(
                 }
             }
 
+            item { Spacer(Modifier.height(sectionSpacing)) }
             item {
-                SectionCard {
+                IOSSectionCard {
                     val maxEventsOptions = listOf(5, 10, 15, 20, 25)
-                    DropdownRow(
-                        title = "Max events",
-                        selectedLabel = "$maxEvents",
+                    IOSNavigationRow(
+                        title = "Max Events",
+                        value = "$maxEvents",
                         options = maxEventsOptions.map { "$it" },
                         onSelect = { index ->
                             settingsViewModel.setMaxEvents(maxEventsOptions[index])
                         },
                     )
-                    SliderRow(
-                        title = "Max title length",
+                    IOSSeparator()
+                    IOSSliderRow(
+                        title = "Max Title Length",
                         value = titleMaxLength.toFloat(),
                         valueRange = 0f..50f,
                         steps = 49,
                         valueLabel = if (titleMaxLength == 0) "Unlimited" else "$titleMaxLength chars",
                         onValueChange = { settingsViewModel.setTitleMaxLength(it.roundToInt()) },
                     )
-                    SwitchRow(
-                        title = "Travel time",
-                        subtitle = "Account for travel time in event reminders",
+                    IOSSeparator()
+                    IOSToggleRow(
+                        title = "Travel Time",
                         checked = travelTimeEnabled,
                         onCheckedChange = { settingsViewModel.setTravelTimeEnabled(it) },
                     )
                 }
             }
 
-            // ── About ──
-            item { SectionHeader("About") }
-
+            // -- About --
+            item { IOSSectionHeader("ABOUT") }
             item {
-                SectionCard {
-                    InfoRow(title = "Version", value = BuildConfig.VERSION_NAME)
-                    InfoRow(title = "Check for updates")
+                IOSSectionCard {
+                    IOSInfoRow(title = "Version", value = BuildConfig.VERSION_NAME)
+                    IOSSeparator()
+                    IOSInfoRow(title = "Check for Updates")
                 }
             }
 
@@ -416,166 +460,217 @@ fun SettingsScreen(
     }
 }
 
-// ── Primitives ──
+// -- iOS-style primitives --
 
 @Composable
-private fun SectionHeader(title: String) {
+private fun IOSSectionHeader(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 8.dp),
+        fontSize = 13.sp,
+        color = iOSGray,
+        modifier = Modifier.padding(start = 16.dp, bottom = 6.dp, top = 24.dp),
     )
 }
 
 @Composable
-private fun SectionCard(
+private fun IOSSectionCard(
     content: @Composable () -> Unit,
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(sectionCornerRadius),
+        color = iOSSurface,
     ) {
         Column { content() }
     }
 }
 
 @Composable
-private fun SwitchRow(
+private fun IOSSeparator() {
+    HorizontalDivider(
+        thickness = separatorThickness,
+        color = iOSSeparator,
+        modifier = Modifier.padding(start = separatorStartPadding),
+    )
+}
+
+@Composable
+private fun IOSToggleRow(
     title: String,
-    subtitle: String? = null,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .defaultMinSize(minHeight = rowMinHeight)
             .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = rowHorizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
-        }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Text(
+            text = title,
+            fontSize = 17.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = iOSGreen,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = iOSUncheckedTrack,
+                uncheckedBorderColor = iOSUncheckedTrack,
+            ),
+        )
     }
 }
 
 @Composable
-private fun InfoRow(
+private fun IOSInfoRow(
     title: String,
     value: String? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .padding(horizontal = 16.dp),
+            .defaultMinSize(minHeight = rowMinHeight)
+            .padding(horizontal = rowHorizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(
+            text = title,
+            fontSize = 17.sp,
+            modifier = Modifier.weight(1f),
+        )
         if (value != null) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 17.sp,
+                color = iOSGray,
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DropdownRow(
+private fun IOSNavigationRow(
     title: String,
-    selectedLabel: String,
+    value: String,
     options: List<String>,
     onSelect: (Int) -> Unit,
+    showSeparator: Boolean = true,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
 
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        OutlinedTextField(
-            value = selectedLabel,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(title) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEachIndexed { index, label ->
-                DropdownMenuItem(
-                    text = { Text(label) },
-                    onClick = {
-                        onSelect(index)
-                        expanded = false
-                    },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RadioGroupRow(
-    title: String,
-    options: List<String>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .defaultMinSize(minHeight = rowMinHeight)
+            .clickable { showDialog = true }
+            .padding(horizontal = rowHorizontalPadding),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(bottom = 4.dp),
+            fontSize = 17.sp,
+            modifier = Modifier.weight(1f),
         )
-        options.forEachIndexed { index, label ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(44.dp)
-                    .clickable { onSelect(index) },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                RadioButton(
-                    selected = index == selectedIndex,
-                    onClick = { onSelect(index) },
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(text = label, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
+        Text(
+            text = value,
+            fontSize = 17.sp,
+            color = iOSGray,
+        )
+        Spacer(Modifier.width(4.dp))
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = iOSSeparator,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+
+    if (showDialog) {
+        IOSPickerDialog(
+            title = title,
+            options = options,
+            selectedOption = value,
+            onSelect = { index ->
+                onSelect(index)
+                showDialog = false
+            },
+            onDismiss = { showDialog = false },
+        )
     }
 }
 
 @Composable
-private fun SliderRow(
+private fun IOSPickerDialog(
+    title: String,
+    options: List<String>,
+    selectedOption: String,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = title,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        },
+        text = {
+            Column {
+                options.forEachIndexed { index, option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = rowMinHeight)
+                            .clickable { onSelect(index) }
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = option,
+                            fontSize = 17.sp,
+                            color = if (option == selectedOption) iOSBlue else Color.Unspecified,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (option == selectedOption) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint = iOSBlue,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    if (index < options.size - 1) {
+                        HorizontalDivider(
+                            thickness = separatorThickness,
+                            color = iOSSeparator,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = iOSBlue)
+            }
+        },
+        containerColor = iOSSurface,
+        shape = RoundedCornerShape(14.dp),
+    )
+}
+
+@Composable
+private fun IOSSliderRow(
     title: String,
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
@@ -586,17 +681,20 @@ private fun SliderRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = rowHorizontalPadding, vertical = 8.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = title,
+                fontSize = 17.sp,
+            )
             Text(
                 text = valueLabel,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
+                fontSize = 15.sp,
+                color = iOSGray,
             )
         }
         Slider(
@@ -604,12 +702,17 @@ private fun SliderRow(
             onValueChange = onValueChange,
             valueRange = valueRange,
             steps = steps,
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White,
+                activeTrackColor = iOSBlue,
+                inactiveTrackColor = iOSUncheckedTrack,
+            ),
         )
     }
 }
 
 @Composable
-private fun CalendarRow(
+private fun IOSCalendarRow(
     calendar: CalendarInfo,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
@@ -621,9 +724,9 @@ private fun CalendarRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .defaultMinSize(minHeight = rowMinHeight)
             .clickable { onToggle(!enabled) }
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = rowHorizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -634,13 +737,26 @@ private fun CalendarRow(
         )
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = calendar.title, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = calendar.title,
+                fontSize = 17.sp,
+            )
             Text(
                 text = calendar.source,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 13.sp,
+                color = iOSGray,
             )
         }
-        Switch(checked = enabled, onCheckedChange = onToggle)
+        Switch(
+            checked = enabled,
+            onCheckedChange = onToggle,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = iOSGreen,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = iOSUncheckedTrack,
+                uncheckedBorderColor = iOSUncheckedTrack,
+            ),
+        )
     }
 }

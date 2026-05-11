@@ -5,11 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.CalendarContract
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -23,25 +21,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -51,14 +45,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.immedio.toevent.domain.model.Event
 import com.immedio.toevent.util.DateFormatters
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventDetailScreen(
     eventId: String,
@@ -80,16 +76,20 @@ fun EventDetailScreen(
             TopAppBar(
                 title = {},
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    TextButton(onClick = onBack) {
+                        Text(
+                            text = "Events",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 17.sp,
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
+                    containerColor = MaterialTheme.colorScheme.background,
                 ),
             )
         },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         if (event == null) {
             Box(
@@ -100,7 +100,7 @@ fun EventDetailScreen(
             ) {
                 Text(
                     text = "Event not found",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -109,107 +109,27 @@ fun EventDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
+                    .verticalScroll(rememberScrollState()),
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Title
+                // Large title
                 Text(
                     text = if (privacyMode) "Busy" else event.title,
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 34.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Metadata chips
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    // Time chip
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(formatEventTime(event)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.AccessTime,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            leadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        ),
-                        border = null,
-                    )
-
-                    // Calendar chip
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(event.calendarTitle) },
-                        leadingIcon = {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(RoundedCornerShape(5.dp))
-                                    .background(Color(event.calendarColor)),
-                            )
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            labelColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                        border = null,
-                    )
-
-                    // Location chip
-                    if (!event.location.isNullOrBlank() && !privacyMode) {
-                        AssistChip(
-                            onClick = {
-                                val geoUri = Uri.parse(
-                                    "geo:0,0?q=${Uri.encode(event.location)}",
-                                )
-                                context.startActivity(Intent(Intent.ACTION_VIEW, geoUri))
-                            },
-                            label = {
-                                Text(
-                                    text = event.location,
-                                    maxLines = 1,
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.LocationOn,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                            shape = RoundedCornerShape(20.dp),
-                            colors = AssistChipDefaults.assistChipColors(
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                labelColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                                leadingIconContentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            ),
-                            border = null,
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Conflict warning
                 if (event.id in conflictingIds) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Card(
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                        ),
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -219,15 +139,137 @@ fun EventDetailScreen(
                                 Icons.Default.Warning,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                tint = MaterialTheme.colorScheme.error,
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = "This event conflicts with another event",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 15.sp),
+                                color = MaterialTheme.colorScheme.error,
                             )
                         }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // Metadata section
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    Column {
+                        // Time row
+                        MetadataRow(
+                            icon = Icons.Default.AccessTime,
+                            label = formatEventTime(event),
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 52.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                        // Calendar row
+                        MetadataRow(
+                            icon = Icons.Default.CalendarMonth,
+                            label = event.calendarTitle,
+                            leadingDot = Color(event.calendarColor),
+                        )
+                        // Location row
+                        if (!event.location.isNullOrBlank() && !privacyMode) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 52.dp),
+                                thickness = 0.5.dp,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                            MetadataRow(
+                                icon = Icons.Default.LocationOn,
+                                label = event.location,
+                                onClick = {
+                                    val geoUri = Uri.parse(
+                                        "geo:0,0?q=${Uri.encode(event.location)}",
+                                    )
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, geoUri))
+                                },
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Join Meeting button
+                if (event.meetingUrl != null && !privacyMode) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                    ) {
+                        Button(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(event.meetingUrl))
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        ) {
+                            Text(
+                                text = "Join Meeting",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                // Open in Calendar button
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    Button(
+                        onClick = {
+                            val eventIdLong = event.id.toLongOrNull()
+                            val intent = if (eventIdLong != null) {
+                                Intent(Intent.ACTION_VIEW).setData(
+                                    ContentUris.withAppendedId(
+                                        CalendarContract.Events.CONTENT_URI,
+                                        eventIdLong,
+                                    ),
+                                )
+                            } else {
+                                Intent(Intent.ACTION_VIEW)
+                                    .setData(CalendarContract.Events.CONTENT_URI)
+                            }
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    ) {
+                        Text(
+                            text = "Open in Calendar",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Normal,
+                        )
                     }
                 }
 
@@ -235,99 +277,80 @@ fun EventDetailScreen(
                 if (!event.notes.isNullOrBlank() && !privacyMode) {
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
-                        text = "Notes",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
+                        text = "NOTES",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 13.sp,
+                            letterSpacing = 0.5.sp,
                         ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 32.dp, bottom = 6.dp),
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Card(
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        ),
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surface,
                     ) {
                         Text(
                             text = event.notes,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
                             color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(16.dp),
                         )
                     }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Join Meeting button
-                if (event.meetingUrl != null && !privacyMode) {
-                    Button(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(event.meetingUrl))
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    ) {
-                        Icon(
-                            Icons.Default.VideoCall,
-                            contentDescription = null,
-                            modifier = Modifier.size(22.dp),
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Join Meeting",
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.SemiBold,
-                            ),
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                // Open in Calendar button
-                OutlinedButton(
-                    onClick = {
-                        val eventIdLong = event.id.toLongOrNull()
-                        val intent = if (eventIdLong != null) {
-                            Intent(Intent.ACTION_VIEW).setData(
-                                ContentUris.withAppendedId(
-                                    CalendarContract.Events.CONTENT_URI,
-                                    eventIdLong,
-                                ),
-                            )
-                        } else {
-                            Intent(Intent.ACTION_VIEW)
-                                .setData(CalendarContract.Events.CONTENT_URI)
-                        }
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    Icon(
-                        Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Open in Calendar",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun MetadataRow(
+    icon: ImageVector,
+    label: String,
+    leadingDot: Color? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        if (leadingDot != null) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(leadingDot),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (onClick != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }

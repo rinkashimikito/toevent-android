@@ -6,6 +6,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -22,25 +23,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.VideoCall
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -49,9 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -116,34 +111,29 @@ fun EventListScreen(
         }
     }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = WindowInsets(0),
         topBar = {
-            LargeTopAppBar(
-                title = { Text("Events") },
+            TopAppBar(
+                title = {},
                 actions = {
+                    IconButton(onClick = {
+                        val intent = Intent(Intent.ACTION_INSERT)
+                            .setData(CalendarContract.Events.CONTENT_URI)
+                        context.startActivity(intent)
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = "New Event")
+                    }
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
-                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    val intent = Intent(Intent.ACTION_INSERT)
-                        .setData(CalendarContract.Events.CONTENT_URI)
-                    context.startActivity(intent)
-                },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("New Event") },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
@@ -157,14 +147,30 @@ fun EventListScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 88.dp),
+                    contentPadding = PaddingValues(bottom = 32.dp),
                 ) {
+                    // iOS large title
+                    item(key = "large_title") {
+                        Text(
+                            text = "Events",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 34.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.padding(
+                                start = 16.dp,
+                                end = 16.dp,
+                                bottom = 8.dp,
+                            ),
+                        )
+                    }
+
+                    // Countdown banner
                     nextEvent?.let { event ->
                         item(key = "countdown_banner") {
-                            HeroCountdownCard(
+                            CountdownBanner(
                                 eventTitle = if (privacyMode) "Busy" else event.title,
                                 countdownText = countdownText,
-                                urgencyColor = urgencyLevel.color(isDark),
+                                accentColor = urgencyLevel.color(isDark),
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                                     .animateItem(
@@ -186,19 +192,19 @@ fun EventListScreen(
                                 ),
                             )
                         }
-                        items(dayEvents, key = { it.id }) { event ->
-                            EventCard(
-                                event = event,
-                                isConflicting = event.id in conflictingIds,
+                        item(key = "section_$header") {
+                            IOSSection(
+                                events = dayEvents,
+                                conflictingIds = conflictingIds,
                                 privacyMode = privacyMode,
-                                onClick = { onNavigateToDetail(event.id) },
-                                onLongClick = {
+                                onClick = { onNavigateToDetail(it.id) },
+                                onLongClick = { event ->
                                     if (viewModel.isEventActive(event)) {
                                         viewModel.dismissFromDisplay(event)
                                     }
                                 },
                                 modifier = Modifier
-                                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                                    .padding(horizontal = 16.dp)
                                     .animateItem(
                                         fadeInSpec = spring(stiffness = Spring.StiffnessLow),
                                         placementSpec = spring(stiffness = Spring.StiffnessMediumLow),
@@ -213,49 +219,46 @@ fun EventListScreen(
 }
 
 @Composable
-private fun HeroCountdownCard(
+private fun CountdownBanner(
     eventTitle: String,
     countdownText: String,
-    urgencyColor: Color,
+    accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
-    val gradientStart = urgencyColor.copy(alpha = 0.6f)
-    val gradientEnd = urgencyColor.copy(alpha = 0.2f)
-
-    Card(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surface,
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(gradientStart, gradientEnd),
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                )
-                .padding(24.dp),
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
-                Text(
-                    text = countdownText,
-                    style = MaterialTheme.typography.displaySmall.copy(
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-1).sp,
-                    ),
-                    color = urgencyColor,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = eventTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Next up",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+            Text(
+                text = countdownText,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.5).sp,
+                ),
+                color = accentColor,
+            )
         }
     }
 }
@@ -266,27 +269,17 @@ private fun EmptyState() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 48.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.CalendarMonth,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "No events this week",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Pull to refresh or create a new event",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Pull to refresh",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 15.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             )
         }
     }
@@ -295,116 +288,122 @@ private fun EmptyState() {
 @Composable
 private fun DayHeader(label: String, modifier: Modifier = Modifier) {
     Text(
-        text = label,
-        style = MaterialTheme.typography.titleSmall.copy(
-            fontWeight = FontWeight.Bold,
+        text = label.uppercase(),
+        style = MaterialTheme.typography.labelSmall.copy(
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp,
+            letterSpacing = 0.5.sp,
         ),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 8.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 6.dp),
     )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun EventCard(
+private fun IOSSection(
+    events: List<Event>,
+    conflictingIds: Set<String>,
+    privacyMode: Boolean,
+    onClick: (Event) -> Unit,
+    onLongClick: (Event) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column {
+            events.forEachIndexed { index, event ->
+                EventRow(
+                    event = event,
+                    isConflicting = event.id in conflictingIds,
+                    privacyMode = privacyMode,
+                    onClick = { onClick(event) },
+                    onLongClick = { onLongClick(event) },
+                )
+                if (index < events.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 20.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun EventRow(
     event: Event,
     isConflicting: Boolean,
     privacyMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val calendarColor = Color(event.calendarColor)
-    val borderColor = if (isConflicting) {
-        Color(0xFFFF9800).copy(alpha = 0.7f)
-    } else {
-        Color.Transparent
-    }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = if (isConflicting) {
-            androidx.compose.foundation.BorderStroke(1.5.dp, borderColor)
-        } else {
-            null
-        },
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
+        // Calendar color left border
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick,
+                .width(4.dp)
+                .height(36.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(calendarColor),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = if (privacyMode) "Busy" else event.title,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Normal,
                 ),
-        ) {
-            // Calendar color left strip
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(72.dp)
-                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-                    .background(calendarColor),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(16.dp),
-            ) {
-                Text(
-                    text = if (privacyMode) "Busy" else event.title,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = formatTimeRange(event),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (!privacyMode) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = event.calendarTitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
-            }
-
-            if (event.meetingUrl != null && !privacyMode) {
-                SuggestionChip(
-                    onClick = onClick,
-                    label = { Text("Join", style = MaterialTheme.typography.labelSmall) },
-                    icon = {
-                        Icon(
-                            Icons.Default.VideoCall,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    },
-                    modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                        .padding(end = 12.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        iconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                )
-            }
+            Text(
+                text = formatTimeRange(event),
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 15.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
+
+        if (event.meetingUrl != null && !privacyMode) {
+            Text(
+                text = "Join",
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 4.dp),
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+        }
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier
+                .size(20.dp)
+                .padding(end = 0.dp),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
     }
 }
 

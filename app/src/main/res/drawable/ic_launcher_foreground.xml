@@ -4,20 +4,16 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Bold T with embedded forward arrow -->
-    <!-- Crossbar -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M28,28 L80,28 L80,39 L28,39 Z" />
+    <!-- The Horizon: a circle rising above a line — "something is about to happen" -->
 
-    <!-- Stem -->
+    <!-- Sun/circle — the event approaching -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M48,39 L60,39 L60,82 L48,82 Z" />
+        android:pathData="M54,36 a13,13 0 1,1 0,0.01 Z" />
 
-    <!-- Rightward arrowhead from stem -->
+    <!-- Horizon line — the threshold of now -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M60,56 L78,70 L60,84 Z" />
+        android:pathData="M26,60 L82,60 A2.5,2.5 0 0,1 82,65 L26,65 A2.5,2.5 0 0,1 26,60 Z" />
 
 </vector>
