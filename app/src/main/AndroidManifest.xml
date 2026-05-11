@@ -28,5 +28,18 @@
             </intent-filter>
         </activity>
 
+        <receiver android:name=".service.SnoozeReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="com.immedio.toevent.SNOOZE_EVENT" />
+                <action android:name="com.immedio.toevent.SNOOZE_REMINDER" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".service.ReminderReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="com.immedio.toevent.EVENT_REMINDER" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>
