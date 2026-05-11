@@ -173,6 +173,7 @@ class MainViewModel @Inject constructor(
                 val to = now + (lookahead * 1000).toLong()
 
                 val fetchedEvents = providerManager.fetchAllEvents(now, to, enabledIds)
+                android.util.Log.d("MainViewModel", "Fetched ${fetchedEvents.size} events, from=$now to=$to enabledIds=$enabledIds")
                 _allEvents.value = fetchedEvents
 
                 val notificationsEnabled = preferences.notificationsEnabled.first()

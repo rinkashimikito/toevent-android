@@ -68,11 +68,25 @@ fun EventListScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val conflictingIds by viewModel.conflictingEventIds.collectAsStateWithLifecycle()
     val privacyMode by viewModel.privacyMode.collectAsStateWithLifecycle()
+    val activeSurface by viewModel.activeSurface.collectAsStateWithLifecycle()
+    val thresholds by viewModel.urgencyThresholds.collectAsStateWithLifecycle()
     val isDark = isSystemInDarkTheme()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.refreshEvents()
+    }
+
+    // Start/stop CountdownService based on surface config and next event
+    LaunchedEffect(nextEvent, activeSurface, privacyMode, thresholds) {
+        if (activeSurface.notificationEnabled && nextEvent != null) {
+            val intent = com.immedio.toevent.service.CountdownService.startIntent(
+                context, nextEvent!!, privacyMode, thresholds,
+            )
+            context.startForegroundService(intent)
+        } else if (!activeSurface.notificationEnabled) {
+            context.stopService(com.immedio.toevent.service.CountdownService.stopIntent(context))
+        }
     }
 
     Scaffold(

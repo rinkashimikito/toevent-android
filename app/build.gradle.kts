@@ -84,6 +84,7 @@ dependencies {
 
     // WorkManager
     implementation(libs.work.runtime)
+    implementation("androidx.startup:startup-runtime:1.2.0")
 
     // Widget
     implementation(libs.glance)

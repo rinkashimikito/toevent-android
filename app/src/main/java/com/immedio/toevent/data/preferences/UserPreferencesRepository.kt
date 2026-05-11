@@ -27,7 +27,7 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
-    val lookahead: Flow<Double> = dataStore.data.map { it[PreferenceKeys.LOOKAHEAD] ?: 86400.0 }
+    val lookahead: Flow<Double> = dataStore.data.map { it[PreferenceKeys.LOOKAHEAD] ?: 604800.0 } // 7 days default
     suspend fun setLookahead(value: Double) { dataStore.edit { it[PreferenceKeys.LOOKAHEAD] = value } }
 
     val timeDisplayFormat: Flow<TimeDisplayFormat> = dataStore.data.map {
