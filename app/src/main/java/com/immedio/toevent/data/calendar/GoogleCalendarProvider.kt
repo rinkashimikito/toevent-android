@@ -34,7 +34,9 @@ class GoogleCalendarProvider(
         }
 
     private val dateFormat: SimpleDateFormat
-        get() = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        get() = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
 
     private suspend fun getValidToken(): String? {
         var creds = authService.getCredentials(account.id) ?: return null

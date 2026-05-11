@@ -1,5 +1,6 @@
 package com.immedio.toevent.ui.events
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.immedio.toevent.data.preferences.UserPreferencesRepository
@@ -9,7 +10,9 @@ import com.immedio.toevent.domain.model.Event
 import com.immedio.toevent.domain.model.TimeDisplayFormat
 import com.immedio.toevent.domain.model.UrgencyLevel
 import com.immedio.toevent.domain.model.UrgencyThresholds
+import com.immedio.toevent.service.CalendarContentObserver
 import com.immedio.toevent.service.ReminderScheduler
+import com.immedio.toevent.service.SyncScheduler
 import com.immedio.toevent.util.DateFormatters
 import com.immedio.toevent.util.conflictingEventIds
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +23,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -30,6 +34,8 @@ class MainViewModel @Inject constructor(
     private val providerManager: CalendarProviderManager,
     private val preferences: UserPreferencesRepository,
     private val reminderScheduler: ReminderScheduler,
+    private val syncScheduler: SyncScheduler,
+    private val calendarContentObserver: CalendarContentObserver,
 ) : ViewModel() {
 
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
@@ -62,17 +68,20 @@ class MainViewModel @Inject constructor(
     private val focusFilterCalendars: StateFlow<Set<String>> = preferences.focusFilterCalendars
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
+    private val maxEvents: StateFlow<Int> = preferences.maxEvents
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10)
+
     val events: StateFlow<List<Event>> = combine(
-        _allEvents, hideAllDayEvents, focusFilterCalendars,
-    ) { allEvents, hideAllDay, focusCalendars ->
+        _allEvents, hideAllDayEvents, focusFilterCalendars, maxEvents,
+    ) { allEvents, hideAllDay, focusCalendars, max ->
         var filtered = allEvents
         if (hideAllDay) {
             filtered = filtered.filter { !it.isAllDay }
         }
         if (focusCalendars.isNotEmpty()) {
-            filtered = filtered.filter { it.calendarTitle in focusCalendars }
+            filtered = filtered.filter { it.calendarId in focusCalendars }
         }
-        filtered
+        filtered.take(max)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val nextEvent: StateFlow<Event?> = combine(
@@ -107,6 +116,24 @@ class MainViewModel @Inject constructor(
 
     init {
         startCountdownTimer()
+        viewModelScope.launch {
+            preferences.backgroundMode.collect { mode ->
+                syncScheduler.schedulePeriodicSync(mode)
+            }
+        }
+        calendarContentObserver.register()
+        refreshEvents()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        calendarContentObserver.unregister()
+    }
+
+    @VisibleForTesting
+    internal fun stopCountdownTimer() {
+        countdownJob?.cancel()
+        countdownJob = null
     }
 
     private fun startCountdownTimer() {
@@ -160,8 +187,6 @@ class MainViewModel @Inject constructor(
     }
 
     fun dismissFromDisplay(event: Event) {
-        val now = System.currentTimeMillis()
-        if (event.startDate > now || now >= event.endDate) return
         val hasOther = _allEvents.value.any { !it.isAllDay && it.id != event.id }
         if (!hasOther) return
         _dismissedEventId.value = event.id

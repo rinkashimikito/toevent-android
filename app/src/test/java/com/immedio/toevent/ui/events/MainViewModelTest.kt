@@ -1,6 +1,5 @@
 package com.immedio.toevent.ui.events
 
-import app.cash.turbine.test
 import com.immedio.toevent.data.preferences.UserPreferencesRepository
 import com.immedio.toevent.domain.manager.CalendarProviderManager
 import com.immedio.toevent.domain.model.ActiveSurface
@@ -17,6 +16,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -78,47 +78,61 @@ class MainViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun createViewModel(): MainViewModel {
+        val vm = MainViewModel(providerManager, preferences, reminderScheduler)
+        vm.stopCountdownTimer()
+        return vm
+    }
+
     @Test
     fun `nextEvent is first non-all-day event`() = runTest {
-        val vm = MainViewModel(providerManager, preferences, reminderScheduler)
         val allDay = testEvent("ad", allDay = true)
         val timed = testEvent("t1")
         coEvery { providerManager.fetchAllEvents(any(), any(), any()) } returns listOf(allDay, timed)
 
+        val vm = createViewModel()
+
+        // Subscribe to activate WhileSubscribed sharing
+        val collectJob = launch(testDispatcher) { vm.nextEvent.collect {} }
+
         vm.refreshEvents()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        vm.nextEvent.test {
-            val event = awaitItem()
-            assertEquals("t1", event?.id)
-        }
+        assertEquals("t1", vm.nextEvent.value?.id)
+        collectJob.cancel()
     }
 
     @Test
     fun `nextEvent is null when no events`() = runTest {
-        val vm = MainViewModel(providerManager, preferences, reminderScheduler)
         coEvery { providerManager.fetchAllEvents(any(), any(), any()) } returns emptyList()
+
+        val vm = createViewModel()
+        val collectJob = launch(testDispatcher) { vm.nextEvent.collect {} }
 
         vm.refreshEvents()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        vm.nextEvent.test {
-            assertNull(awaitItem())
-        }
+        assertNull(vm.nextEvent.value)
+        collectJob.cancel()
     }
 
     @Test
     fun `urgency level computed from next event`() = runTest {
-        val vm = MainViewModel(providerManager, preferences, reminderScheduler)
         val event = testEvent("1", startOffset = 60_000)
         coEvery { providerManager.fetchAllEvents(any(), any(), any()) } returns listOf(event)
+
+        val vm = createViewModel()
+
+        // Subscribe to both nextEvent (upstream) and urgencyLevel
+        val jobs = listOf(
+            launch(testDispatcher) { vm.nextEvent.collect {} },
+            launch(testDispatcher) { vm.urgencyLevel.collect {} },
+        )
 
         vm.refreshEvents()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        vm.urgencyLevel.test {
-            val level = awaitItem()
-            assertEquals(UrgencyLevel.IMMINENT, level)
-        }
+        assertEquals(UrgencyLevel.IMMINENT, vm.urgencyLevel.value)
+        jobs.forEach { it.cancel() }
     }
 }

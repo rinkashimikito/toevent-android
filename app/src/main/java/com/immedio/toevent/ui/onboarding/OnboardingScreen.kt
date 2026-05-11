@@ -88,6 +88,9 @@ fun OnboardingScreen(
                 3 -> SurfaceSelectionPage(
                     selected = selectedSurface,
                     onSelect = { selectedSurface = it },
+                    onNext = { page = 4 },
+                )
+                4 -> CalendarSelectionPage(
                     onComplete = { onComplete(selectedSurface) },
                 )
             }
@@ -202,7 +205,7 @@ private fun NotificationPermissionPage(
 private fun SurfaceSelectionPage(
     selected: ActiveSurface,
     onSelect: (ActiveSurface) -> Unit,
-    onComplete: () -> Unit,
+    onNext: () -> Unit,
 ) {
     Text(
         text = "Choose Display Surface",
@@ -237,6 +240,26 @@ private fun SurfaceSelectionPage(
             )
         }
     }
+    Spacer(modifier = Modifier.height(32.dp))
+    Button(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
+        Text("Continue")
+    }
+}
+
+@Composable
+private fun CalendarSelectionPage(
+    onComplete: () -> Unit,
+) {
+    Text(
+        text = "Choose Your Calendars",
+        style = MaterialTheme.typography.headlineMedium,
+    )
+    Spacer(modifier = Modifier.height(12.dp))
+    Text(
+        text = "All calendars will be shown. You can customize this in Settings.",
+        style = MaterialTheme.typography.bodyLarge,
+        textAlign = TextAlign.Center,
+    )
     Spacer(modifier = Modifier.height(32.dp))
     Button(onClick = onComplete, modifier = Modifier.fillMaxWidth()) {
         Text("Finish Setup")

@@ -83,7 +83,7 @@ class NotificationService @Inject constructor(
 
         if (event.meetingUrl != null) {
             val joinIntent = PendingIntent.getActivity(
-                context, 1,
+                context, event.id.hashCode() + 3000,
                 Intent(Intent.ACTION_VIEW, android.net.Uri.parse(event.meetingUrl)),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
@@ -95,8 +95,11 @@ class NotificationService @Inject constructor(
         }
 
         val dismissIntent = PendingIntent.getBroadcast(
-            context, 2,
-            Intent("com.immedio.toevent.DISMISS_EVENT").putExtra("event_id", event.id),
+            context, event.id.hashCode() + 1000,
+            Intent("com.immedio.toevent.DISMISS_EVENT").apply {
+                setPackage(context.packageName)
+                putExtra("event_id", event.id)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         builder.addAction(
@@ -106,8 +109,12 @@ class NotificationService @Inject constructor(
         )
 
         val snoozeIntent = PendingIntent.getBroadcast(
-            context, 3,
-            Intent("com.immedio.toevent.SNOOZE_EVENT").putExtra("event_id", event.id).putExtra("snooze_minutes", 5),
+            context, event.id.hashCode() + 2000,
+            Intent("com.immedio.toevent.SNOOZE_EVENT").apply {
+                setPackage(context.packageName)
+                putExtra("event_id", event.id)
+                putExtra("snooze_minutes", 5)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         builder.addAction(
@@ -144,7 +151,7 @@ class NotificationService @Inject constructor(
 
         if (event.meetingUrl != null) {
             val joinIntent = PendingIntent.getActivity(
-                context, 10,
+                context, event.id.hashCode() + 4000,
                 Intent(Intent.ACTION_VIEW, android.net.Uri.parse(event.meetingUrl)),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
@@ -152,15 +159,23 @@ class NotificationService @Inject constructor(
         }
 
         val snooze5Intent = PendingIntent.getBroadcast(
-            context, 11,
-            Intent("com.immedio.toevent.SNOOZE_REMINDER").putExtra("event_id", event.id).putExtra("snooze_minutes", 5),
+            context, event.id.hashCode() + 5000,
+            Intent("com.immedio.toevent.SNOOZE_REMINDER").apply {
+                setPackage(context.packageName)
+                putExtra("event_id", event.id)
+                putExtra("snooze_minutes", 5)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         builder.addAction(android.R.drawable.ic_menu_recent_history, "Snooze 5m", snooze5Intent)
 
         val snooze10Intent = PendingIntent.getBroadcast(
-            context, 12,
-            Intent("com.immedio.toevent.SNOOZE_REMINDER").putExtra("event_id", event.id).putExtra("snooze_minutes", 10),
+            context, event.id.hashCode() + 6000,
+            Intent("com.immedio.toevent.SNOOZE_REMINDER").apply {
+                setPackage(context.packageName)
+                putExtra("event_id", event.id)
+                putExtra("snooze_minutes", 10)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         builder.addAction(android.R.drawable.ic_menu_recent_history, "Snooze 10m", snooze10Intent)

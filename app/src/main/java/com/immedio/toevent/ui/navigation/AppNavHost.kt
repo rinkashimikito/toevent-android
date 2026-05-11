@@ -2,10 +2,10 @@ package com.immedio.toevent.ui.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,18 +21,25 @@ import com.immedio.toevent.ui.events.MainViewModel
 import com.immedio.toevent.ui.onboarding.OnboardingScreen
 import com.immedio.toevent.ui.settings.AddAccountSheet
 import com.immedio.toevent.ui.settings.SettingsScreen
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 @Composable
 fun AppNavHost(preferencesRepository: UserPreferencesRepository) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
-    val hasCompletedIntro = remember {
-        runBlocking { preferencesRepository.hasCompletedIntro.first() }
+
+    // Collect async instead of runBlocking
+    val hasCompletedIntro by preferencesRepository.hasCompletedIntro.collectAsState(initial = null)
+
+    // Show loading while we wait for DataStore
+    if (hasCompletedIntro == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
     }
-    val startDestination: NavRoute = if (hasCompletedIntro) NavRoute.EventList else NavRoute.Onboarding
+
+    val startDestination: NavRoute = if (hasCompletedIntro == true) NavRoute.EventList else NavRoute.Onboarding
 
     NavHost(
         navController = navController,
@@ -71,9 +78,8 @@ fun AppNavHost(preferencesRepository: UserPreferencesRepository) {
         }
         composable<NavRoute.EventDetail> { backStackEntry ->
             val route = backStackEntry.toRoute<NavRoute.EventDetail>()
-            val viewModel: MainViewModel = hiltViewModel(
-                navController.getBackStackEntry<NavRoute.EventList>(),
-            )
+            // Fix C5: use own hiltViewModel instead of backstack lookup that can crash
+            val viewModel: MainViewModel = hiltViewModel()
             EventDetailScreen(
                 eventId = route.eventId,
                 viewModel = viewModel,
@@ -85,15 +91,5 @@ fun AppNavHost(preferencesRepository: UserPreferencesRepository) {
                 onDismiss = { navController.popBackStack() },
             )
         }
-    }
-}
-
-@Composable
-private fun PlaceholderScreen(name: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = name)
     }
 }

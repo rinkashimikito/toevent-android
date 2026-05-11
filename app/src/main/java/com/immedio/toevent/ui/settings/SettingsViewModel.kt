@@ -7,6 +7,7 @@ import com.immedio.toevent.domain.model.ActiveSurface
 import com.immedio.toevent.domain.model.BackgroundMode
 import com.immedio.toevent.domain.model.TimeDisplayFormat
 import com.immedio.toevent.domain.model.UrgencyThresholds
+import com.immedio.toevent.service.SyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val preferences: UserPreferencesRepository,
+    private val syncScheduler: SyncScheduler,
 ) : ViewModel() {
 
     val activeSurface: StateFlow<ActiveSurface> = preferences.activeSurface
@@ -116,7 +118,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setBackgroundMode(mode: BackgroundMode) {
-        viewModelScope.launch { preferences.setBackgroundMode(mode) }
+        viewModelScope.launch {
+            preferences.setBackgroundMode(mode)
+            syncScheduler.schedulePeriodicSync(mode)
+        }
     }
 
     fun setTimeDisplayFormat(format: TimeDisplayFormat) {

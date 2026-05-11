@@ -37,7 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,24 +65,24 @@ fun SettingsScreen(
     settingsViewModel: SettingsViewModel = hiltViewModel(),
     calendarViewModel: CalendarViewModel = hiltViewModel(),
 ) {
-    val activeSurface by settingsViewModel.activeSurface.collectAsState()
-    val backgroundMode by settingsViewModel.backgroundMode.collectAsState()
-    val timeDisplayFormat by settingsViewModel.timeDisplayFormat.collectAsState()
-    val useNaturalLanguage by settingsViewModel.useNaturalLanguage.collectAsState()
-    val privacyMode by settingsViewModel.privacyMode.collectAsState()
-    val hideAllDayEvents by settingsViewModel.hideAllDayEvents.collectAsState()
-    val titleMaxLength by settingsViewModel.titleMaxLength.collectAsState()
-    val urgencyThresholds by settingsViewModel.urgencyThresholds.collectAsState()
-    val fetchInterval by settingsViewModel.fetchInterval.collectAsState()
-    val maxEvents by settingsViewModel.maxEvents.collectAsState()
-    val lookahead by settingsViewModel.lookahead.collectAsState()
-    val notificationsEnabled by settingsViewModel.notificationsEnabled.collectAsState()
-    val reminderMinutes by settingsViewModel.reminderMinutes.collectAsState()
-    val notificationSound by settingsViewModel.notificationSound.collectAsState()
-    val travelTimeEnabled by settingsViewModel.travelTimeEnabled.collectAsState()
+    val activeSurface by settingsViewModel.activeSurface.collectAsStateWithLifecycle()
+    val backgroundMode by settingsViewModel.backgroundMode.collectAsStateWithLifecycle()
+    val timeDisplayFormat by settingsViewModel.timeDisplayFormat.collectAsStateWithLifecycle()
+    val useNaturalLanguage by settingsViewModel.useNaturalLanguage.collectAsStateWithLifecycle()
+    val privacyMode by settingsViewModel.privacyMode.collectAsStateWithLifecycle()
+    val hideAllDayEvents by settingsViewModel.hideAllDayEvents.collectAsStateWithLifecycle()
+    val titleMaxLength by settingsViewModel.titleMaxLength.collectAsStateWithLifecycle()
+    val urgencyThresholds by settingsViewModel.urgencyThresholds.collectAsStateWithLifecycle()
+    val fetchInterval by settingsViewModel.fetchInterval.collectAsStateWithLifecycle()
+    val maxEvents by settingsViewModel.maxEvents.collectAsStateWithLifecycle()
+    val lookahead by settingsViewModel.lookahead.collectAsStateWithLifecycle()
+    val notificationsEnabled by settingsViewModel.notificationsEnabled.collectAsStateWithLifecycle()
+    val reminderMinutes by settingsViewModel.reminderMinutes.collectAsStateWithLifecycle()
+    val notificationSound by settingsViewModel.notificationSound.collectAsStateWithLifecycle()
+    val travelTimeEnabled by settingsViewModel.travelTimeEnabled.collectAsStateWithLifecycle()
 
-    val calendars by calendarViewModel.calendars.collectAsState()
-    val enabledCalendarIds by calendarViewModel.enabledCalendarIds.collectAsState()
+    val calendars by calendarViewModel.calendars.collectAsStateWithLifecycle()
+    val enabledCalendarIds by calendarViewModel.enabledCalendarIds.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { calendarViewModel.refreshCalendars() }
 

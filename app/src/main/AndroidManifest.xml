@@ -54,6 +54,12 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".service.DismissReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="com.immedio.toevent.DISMISS_EVENT" />
+            </intent-filter>
+        </receiver>
+
         <receiver android:name=".widget.WidgetReceiver"
             android:exported="true">
             <intent-filter>

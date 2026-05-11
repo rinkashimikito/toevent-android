@@ -6,6 +6,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.immedio.toevent.data.preferences.UserPreferencesRepository
 import com.immedio.toevent.domain.manager.CalendarProviderManager
+import com.immedio.toevent.widget.NextEventWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -35,9 +37,13 @@ class SyncWorker @AssistedInject constructor(
                 reminderScheduler.scheduleReminders(events, reminderMinutes)
             }
 
-            // Update widget if it exists
+            // Update widget
             try {
-                // Widget update will be wired when NextEventWidget is implemented
+                val widget = NextEventWidget()
+                val manager = GlanceAppWidgetManager(applicationContext)
+                manager.getGlanceIds(NextEventWidget::class.java).forEach { glanceId ->
+                    widget.update(applicationContext, glanceId)
+                }
             } catch (_: Exception) { }
 
             Result.success()
