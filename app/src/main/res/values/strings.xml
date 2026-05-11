@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ToEvent</string>
+    <string name="widget_description">Shows your next calendar event with countdown</string>
+</resources>
