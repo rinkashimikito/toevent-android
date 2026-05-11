@@ -124,13 +124,24 @@ class MainViewModel @Inject constructor(
                 syncScheduler.schedulePeriodicSync(mode)
             }
         }
-        calendarContentObserver.register()
+        // Guard: only register if calendar permission is already granted
+        try {
+            calendarContentObserver.register()
+        } catch (_: SecurityException) {
+            // Permission not yet granted (e.g., during onboarding)
+        }
         refreshEvents()
+    }
+
+    fun registerContentObserverIfNeeded() {
+        try {
+            calendarContentObserver.register()
+        } catch (_: SecurityException) { }
     }
 
     override fun onCleared() {
         super.onCleared()
-        calendarContentObserver.unregister()
+        try { calendarContentObserver.unregister() } catch (_: Exception) { }
     }
 
     @VisibleForTesting
@@ -175,7 +186,11 @@ class MainViewModel @Inject constructor(
                 val now = System.currentTimeMillis()
                 val to = now + (lookahead * 1000).toLong()
 
-                val fetchedEvents = providerManager.fetchAllEvents(now, to, enabledIds)
+                val fetchedEvents = try {
+                    providerManager.fetchAllEvents(now, to, enabledIds)
+                } catch (_: SecurityException) {
+                    emptyList() // Calendar permission not granted yet
+                }
                 android.util.Log.d("MainViewModel", "Fetched ${fetchedEvents.size} events, from=$now to=$to enabledIds=$enabledIds")
                 _allEvents.value = fetchedEvents
 
