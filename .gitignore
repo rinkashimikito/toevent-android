@@ -12,3 +12,5 @@ app/build/
 keystore.jks
 keystore.properties
 .kotlin/
+ToEvent-v1.0.0.apk
+*.apk

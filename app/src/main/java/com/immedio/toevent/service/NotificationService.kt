@@ -79,7 +79,7 @@ class NotificationService @Inject constructor(
         )
 
         val builder = NotificationCompat.Builder(context, NotificationChannels.NEXT_EVENT)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(android.R.drawable.ic_menu_my_calendar)
             .setContentTitle(title)
             .setContentText(countdownText)
             .setOngoing(true)
@@ -148,7 +148,7 @@ class NotificationService @Inject constructor(
         )
 
         val builder = NotificationCompat.Builder(context, NotificationChannels.EVENT_ALERTS)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(android.R.drawable.ic_menu_my_calendar)
             .setContentTitle(title)
             .setContentText(text)
             .setAutoCancel(true)

@@ -4,16 +4,16 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- The Horizon: a circle rising above a line — "something is about to happen" -->
-
-    <!-- Sun/circle — the event approaching -->
+    <!-- Circle: dominant, warm, the event approaching -->
+    <!-- Centered at (54, 44), radius 16 — sits just above the line with 2dp gap -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,36 a13,13 0 1,1 0,0.01 Z" />
+        android:pathData="M54,28 a16,16 0 1,1 0,0.01 Z" />
 
-    <!-- Horizon line — the threshold of now -->
+    <!-- Ground line: solid, grounding, the present moment -->
+    <!-- 3dp below circle bottom (44+16=60, line at 62), generous width -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M26,60 L82,60 A2.5,2.5 0 0,1 82,65 L26,65 A2.5,2.5 0 0,1 26,60 Z" />
+        android:pathData="M24,62 L84,62 A3,3 0 0,1 84,68 L24,68 A3,3 0 0,1 24,62 Z" />
 
 </vector>
