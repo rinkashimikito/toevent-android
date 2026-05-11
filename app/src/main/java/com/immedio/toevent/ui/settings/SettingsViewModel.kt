@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.immedio.toevent.data.preferences.UserPreferencesRepository
 import com.immedio.toevent.domain.model.ActiveSurface
 import com.immedio.toevent.domain.model.BackgroundMode
+import com.immedio.toevent.domain.model.ThemeMode
 import com.immedio.toevent.domain.model.TimeDisplayFormat
 import com.immedio.toevent.domain.model.UrgencyThresholds
 import com.immedio.toevent.service.SyncScheduler
@@ -20,6 +21,13 @@ class SettingsViewModel @Inject constructor(
     private val preferences: UserPreferencesRepository,
     private val syncScheduler: SyncScheduler,
 ) : ViewModel() {
+
+    val themeMode: StateFlow<ThemeMode> = preferences.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { preferences.setThemeMode(mode) }
+    }
 
     val activeSurface: StateFlow<ActiveSurface> = preferences.activeSurface
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ActiveSurface.NOTIFICATION)

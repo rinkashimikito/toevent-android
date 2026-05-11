@@ -88,6 +88,7 @@ fun SettingsScreen(
     val notificationSound by settingsViewModel.notificationSound.collectAsStateWithLifecycle()
     val travelTimeEnabled by settingsViewModel.travelTimeEnabled.collectAsStateWithLifecycle()
     val floatingChipEnabled by settingsViewModel.floatingChipEnabled.collectAsStateWithLifecycle()
+    val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
 
     val calendars by calendarViewModel.calendars.collectAsStateWithLifecycle()
     val enabledCalendarIds by calendarViewModel.enabledCalendarIds.collectAsStateWithLifecycle()
@@ -117,6 +118,22 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
+            // ── Appearance ──
+            item { SectionHeader("Appearance") }
+
+            item {
+                SectionCard {
+                    DropdownRow(
+                        title = "Theme",
+                        options = com.immedio.toevent.domain.model.ThemeMode.entries.map { it.label },
+                        selectedLabel = themeMode.label,
+                        onSelect = { index ->
+                            settingsViewModel.setThemeMode(com.immedio.toevent.domain.model.ThemeMode.entries[index])
+                        },
+                    )
+                }
+            }
+
             // ── Display ──
             item { SectionHeader("Display") }
 

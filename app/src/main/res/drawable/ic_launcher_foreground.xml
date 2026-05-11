@@ -4,47 +4,20 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Calendar page body (centered in safe zone) -->
+    <!-- Bold T with embedded forward arrow -->
+    <!-- Crossbar -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M30,28 h48 a4,4 0 0,1 4,4 v44 a4,4 0 0,1 -4,4 h-48 a4,4 0 0,1 -4,-4 v-44 a4,4 0 0,1 4,-4 z" />
+        android:pathData="M28,28 L80,28 L80,39 L28,39 Z" />
 
-    <!-- Calendar header bar -->
-    <path
-        android:fillColor="#E53935"
-        android:pathData="M30,28 h48 a4,4 0 0,1 4,4 v10 h-56 v-10 a4,4 0 0,1 4,-4 z" />
-
-    <!-- Calendar binding dots -->
+    <!-- Stem -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M40,26 a2,2 0 1,1 0,4 a2,2 0 1,1 0,-4 z" />
+        android:pathData="M48,39 L60,39 L60,82 L48,82 Z" />
+
+    <!-- Rightward arrowhead from stem -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M68,26 a2,2 0 1,1 0,4 a2,2 0 1,1 0,-4 z" />
+        android:pathData="M60,56 L78,70 L60,84 Z" />
 
-    <!-- Clock circle -->
-    <path
-        android:pathData="M54,57 m-14,0 a14,14 0,1 1,28 0 a14,14 0,1 1,-28 0"
-        android:strokeWidth="2.5"
-        android:strokeColor="#1565C0"
-        android:fillColor="#E3F2FD" />
-
-    <!-- Clock hour hand -->
-    <path
-        android:pathData="M54,57 L54,48"
-        android:strokeWidth="2.5"
-        android:strokeColor="#1565C0"
-        android:strokeLineCap="round" />
-
-    <!-- Clock minute hand -->
-    <path
-        android:pathData="M54,57 L62,53"
-        android:strokeWidth="2"
-        android:strokeColor="#1565C0"
-        android:strokeLineCap="round" />
-
-    <!-- Clock center dot -->
-    <path
-        android:fillColor="#1565C0"
-        android:pathData="M54,57 m-2,0 a2,2 0 1,1 4,0 a2,2 0 1,1 -4,0" />
 </vector>

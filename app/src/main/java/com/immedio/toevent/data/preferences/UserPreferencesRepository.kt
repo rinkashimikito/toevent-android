@@ -42,7 +42,7 @@ class UserPreferencesRepository @Inject constructor(
     val privacyMode: Flow<Boolean> = dataStore.data.map { it[PreferenceKeys.PRIVACY_MODE] ?: false }
     suspend fun setPrivacyMode(value: Boolean) { dataStore.edit { it[PreferenceKeys.PRIVACY_MODE] = value } }
 
-    val hideAllDayEvents: Flow<Boolean> = dataStore.data.map { it[PreferenceKeys.HIDE_ALL_DAY_EVENTS] ?: true }
+    val hideAllDayEvents: Flow<Boolean> = dataStore.data.map { it[PreferenceKeys.HIDE_ALL_DAY_EVENTS] ?: false }
     suspend fun setHideAllDayEvents(value: Boolean) { dataStore.edit { it[PreferenceKeys.HIDE_ALL_DAY_EVENTS] = value } }
 
     val titleMaxLength: Flow<Int> = dataStore.data.map { it[PreferenceKeys.TITLE_MAX_LENGTH] ?: 20 }
@@ -66,13 +66,13 @@ class UserPreferencesRepository @Inject constructor(
     val fetchInterval: Flow<Double> = dataStore.data.map { it[PreferenceKeys.FETCH_INTERVAL] ?: 900.0 }
     suspend fun setFetchInterval(value: Double) { dataStore.edit { it[PreferenceKeys.FETCH_INTERVAL] = value } }
 
-    val maxEvents: Flow<Int> = dataStore.data.map { it[PreferenceKeys.MAX_EVENTS] ?: 10 }
+    val maxEvents: Flow<Int> = dataStore.data.map { it[PreferenceKeys.MAX_EVENTS] ?: 20 }
     suspend fun setMaxEvents(value: Int) { dataStore.edit { it[PreferenceKeys.MAX_EVENTS] = value } }
 
-    val notificationsEnabled: Flow<Boolean> = dataStore.data.map { it[PreferenceKeys.NOTIFICATIONS_ENABLED] ?: false }
+    val notificationsEnabled: Flow<Boolean> = dataStore.data.map { it[PreferenceKeys.NOTIFICATIONS_ENABLED] ?: true }
     suspend fun setNotificationsEnabled(value: Boolean) { dataStore.edit { it[PreferenceKeys.NOTIFICATIONS_ENABLED] = value } }
 
-    val reminderMinutes: Flow<Int> = dataStore.data.map { it[PreferenceKeys.REMINDER_MINUTES] ?: 5 }
+    val reminderMinutes: Flow<Int> = dataStore.data.map { it[PreferenceKeys.REMINDER_MINUTES] ?: 10 }
     suspend fun setReminderMinutes(value: Int) { dataStore.edit { it[PreferenceKeys.REMINDER_MINUTES] = value } }
 
     val notificationSound: Flow<String> = dataStore.data.map { it[PreferenceKeys.NOTIFICATION_SOUND] ?: "default" }
@@ -98,4 +98,10 @@ class UserPreferencesRepository @Inject constructor(
 
     val floatingChipEnabled: Flow<Boolean> = dataStore.data.map { it[PreferenceKeys.FLOATING_CHIP_ENABLED] ?: false }
     suspend fun setFloatingChipEnabled(value: Boolean) { dataStore.edit { it[PreferenceKeys.FLOATING_CHIP_ENABLED] = value } }
+
+    val themeMode: Flow<com.immedio.toevent.domain.model.ThemeMode> = dataStore.data.map {
+        val raw = it[PreferenceKeys.THEME_MODE]
+        raw?.let { r -> runCatching { com.immedio.toevent.domain.model.ThemeMode.valueOf(r) }.getOrNull() } ?: com.immedio.toevent.domain.model.ThemeMode.SYSTEM
+    }
+    suspend fun setThemeMode(value: com.immedio.toevent.domain.model.ThemeMode) { dataStore.edit { it[PreferenceKeys.THEME_MODE] = value.name } }
 }

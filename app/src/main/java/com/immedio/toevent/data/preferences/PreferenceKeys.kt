@@ -29,4 +29,5 @@ object PreferenceKeys {
     val TRAVEL_TIME_ENABLED = booleanPreferencesKey("travel_time_enabled")
     val FOCUS_FILTER_CALENDARS = stringSetPreferencesKey("focus_filter_calendars")
     val FLOATING_CHIP_ENABLED = booleanPreferencesKey("floating_chip_enabled")
+    val THEME_MODE = stringPreferencesKey("theme_mode") // SYSTEM, LIGHT, DARK
 }
