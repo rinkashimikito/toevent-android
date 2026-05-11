@@ -65,9 +65,15 @@ class NotificationService @Inject constructor(
         privacyMode: Boolean,
     ): NotificationCompat.Builder {
         val title = if (privacyMode) "Busy" else event.title
+
+        // Tap notification -> open system calendar at event time
+        val calendarIntent = Intent(Intent.ACTION_VIEW).apply {
+            data = android.net.Uri.parse("content://com.android.calendar/time/${event.startDate}")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
         val openIntent = PendingIntent.getActivity(
             context, 0,
-            Intent(context, MainActivity::class.java),
+            calendarIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 

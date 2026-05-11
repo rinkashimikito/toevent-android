@@ -95,4 +95,7 @@ class UserPreferencesRepository @Inject constructor(
 
     val focusFilterCalendars: Flow<Set<String>> = dataStore.data.map { it[PreferenceKeys.FOCUS_FILTER_CALENDARS] ?: emptySet() }
     suspend fun setFocusFilterCalendars(value: Set<String>) { dataStore.edit { it[PreferenceKeys.FOCUS_FILTER_CALENDARS] = value } }
+
+    val floatingChipEnabled: Flow<Boolean> = dataStore.data.map { it[PreferenceKeys.FLOATING_CHIP_ENABLED] ?: false }
+    suspend fun setFloatingChipEnabled(value: Boolean) { dataStore.edit { it[PreferenceKeys.FLOATING_CHIP_ENABLED] = value } }
 }

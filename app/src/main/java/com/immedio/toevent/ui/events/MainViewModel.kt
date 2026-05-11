@@ -65,6 +65,9 @@ class MainViewModel @Inject constructor(
     val titleMaxLength: StateFlow<Int> = preferences.titleMaxLength
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
 
+    val floatingChipEnabled: StateFlow<Boolean> = preferences.floatingChipEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     private val focusFilterCalendars: StateFlow<Set<String>> = preferences.focusFilterCalendars
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 

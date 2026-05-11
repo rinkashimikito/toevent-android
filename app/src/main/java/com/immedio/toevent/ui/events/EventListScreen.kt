@@ -89,6 +89,23 @@ fun EventListScreen(
         }
     }
 
+    // Start/stop floating countdown chip
+    val floatingChipEnabled by viewModel.floatingChipEnabled.collectAsStateWithLifecycle()
+    LaunchedEffect(nextEvent, floatingChipEnabled, privacyMode, thresholds) {
+        if (floatingChipEnabled && nextEvent != null &&
+            android.provider.Settings.canDrawOverlays(context)) {
+            context.startService(
+                com.immedio.toevent.service.FloatingCountdownService.startIntent(
+                    context, nextEvent!!, privacyMode, thresholds,
+                )
+            )
+        } else if (!floatingChipEnabled) {
+            context.stopService(
+                com.immedio.toevent.service.FloatingCountdownService.stopIntent(context)
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
