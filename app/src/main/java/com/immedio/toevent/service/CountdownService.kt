@@ -21,6 +21,7 @@ class CountdownService : Service() {
 
     private val handler = Handler(Looper.getMainLooper())
     private var currentEvent: Event? = null
+    private var upcomingEvents: List<Event> = emptyList()
     private var urgencyThresholds = UrgencyThresholds.DEFAULT
     private var privacyMode = false
 
@@ -68,6 +69,17 @@ class CountdownService : Service() {
                     meetingUrl = meetingUrl,
                 )
 
+                // Parse upcoming events
+                val upTitles = intent.getStringArrayExtra("upcoming_titles") ?: arrayOf()
+                val upStarts = intent.getLongArrayExtra("upcoming_starts") ?: longArrayOf()
+                upcomingEvents = upTitles.indices.map { i ->
+                    Event(
+                        id = "upcoming_$i", title = upTitles[i],
+                        startDate = upStarts.getOrElse(i) { 0 }, endDate = upStarts.getOrElse(i) { 0 } + 3600_000,
+                        isAllDay = false, calendarColor = 0, calendarId = "", calendarTitle = "",
+                    )
+                }
+
                 startForegroundWithNotification()
                 handler.removeCallbacks(tickRunnable)
                 handler.post(tickRunnable)
@@ -106,7 +118,7 @@ class CountdownService : Service() {
         val urgency = UrgencyLevel.from(remaining, urgencyThresholds)
 
         val notification = notificationService.buildCountdownNotification(
-            event, countdownText, urgency, privacyMode,
+            event, countdownText, urgency, privacyMode, upcomingEvents,
         )
 
         startForeground(NotificationChannels.COUNTDOWN_NOTIFICATION_ID, notification.build())
@@ -131,10 +143,10 @@ class CountdownService : Service() {
         val urgency = UrgencyLevel.from(remaining, urgencyThresholds)
 
         val notification = notificationService.buildCountdownNotification(
-            event, countdownText, urgency, privacyMode,
+            event, countdownText, urgency, privacyMode, upcomingEvents,
         )
 
-        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
         nm.notify(NotificationChannels.COUNTDOWN_NOTIFICATION_ID, notification.build())
     }
 
@@ -159,7 +171,10 @@ class CountdownService : Service() {
         const val EXTRA_URGENCY_SOON = "urgency_soon"
         const val EXTRA_URGENCY_APPROACHING = "urgency_approaching"
 
-        fun startIntent(context: Context, event: Event, privacyMode: Boolean, thresholds: UrgencyThresholds): Intent {
+        fun startIntent(
+            context: Context, event: Event, privacyMode: Boolean,
+            thresholds: UrgencyThresholds, upcomingEvents: List<Event> = emptyList(),
+        ): Intent {
             return Intent(context, CountdownService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_EVENT_ID, event.id)
@@ -172,6 +187,9 @@ class CountdownService : Service() {
                 putExtra(EXTRA_URGENCY_IMMINENT, thresholds.imminent)
                 putExtra(EXTRA_URGENCY_SOON, thresholds.soon)
                 putExtra(EXTRA_URGENCY_APPROACHING, thresholds.approaching)
+                // Upcoming events as parallel arrays
+                putExtra("upcoming_titles", upcomingEvents.map { it.title }.toTypedArray())
+                putExtra("upcoming_starts", upcomingEvents.map { it.startDate }.toLongArray())
             }
         }
 

@@ -10,6 +10,7 @@ import android.os.Looper
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.WindowManager
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -30,18 +31,23 @@ class FloatingCountdownService : Service() {
 
     private var windowManager: WindowManager? = null
     private var floatingView: View? = null
-    private var titleView: TextView? = null
-    private var countdownView: TextView? = null
+    private var container: LinearLayout? = null
 
     private val handler = Handler(Looper.getMainLooper())
-    private var currentEvent: Event? = null
+    private var events: List<EventData> = emptyList()
     private var urgencyThresholds = UrgencyThresholds.DEFAULT
     private var privacyMode = false
+
+    private data class EventData(
+        val id: String, val title: String, val startDate: Long,
+        val endDate: Long, val meetingUrl: String?,
+    )
 
     private val tickRunnable = object : Runnable {
         override fun run() {
             updateDisplay()
-            val remaining = currentEvent?.let { (it.startDate - System.currentTimeMillis()) / 1000.0 } ?: 60.0
+            val nextStart = events.firstOrNull()?.startDate
+            val remaining = nextStart?.let { (it - System.currentTimeMillis()) / 1000.0 } ?: 60.0
             val interval = if (remaining in 0.0..300.0) 1000L else 30_000L
             handler.postDelayed(this, interval)
         }
@@ -56,42 +62,37 @@ class FloatingCountdownService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> {
-                currentEvent = Event(
-                    id = intent.getStringExtra("event_id") ?: "",
-                    title = intent.getStringExtra("event_title") ?: "Event",
-                    startDate = intent.getLongExtra("event_start", 0),
-                    endDate = intent.getLongExtra("event_end", 0),
-                    isAllDay = false,
-                    calendarColor = 0,
-                    calendarId = "",
-                    calendarTitle = "",
-                    meetingUrl = intent.getStringExtra("meeting_url"),
-                )
-                privacyMode = intent.getBooleanExtra("privacy_mode", false)
-                val imm = intent.getDoubleExtra("urgency_imminent", 300.0)
-                val soon = intent.getDoubleExtra("urgency_soon", 900.0)
-                val app = intent.getDoubleExtra("urgency_approaching", 1800.0)
-                urgencyThresholds = UrgencyThresholds(imm, soon, app)
+            ACTION_START, ACTION_UPDATE -> {
+                val ids = intent.getStringArrayExtra("event_ids") ?: arrayOf()
+                val titles = intent.getStringArrayExtra("event_titles") ?: arrayOf()
+                val starts = intent.getLongArrayExtra("event_starts") ?: longArrayOf()
+                val ends = intent.getLongArrayExtra("event_ends") ?: longArrayOf()
+                val urls = intent.getStringArrayExtra("event_urls") ?: arrayOf()
 
-                showFloatingChip()
-                handler.removeCallbacks(tickRunnable)
-                handler.post(tickRunnable)
-            }
-            ACTION_UPDATE -> {
-                currentEvent = Event(
-                    id = intent.getStringExtra("event_id") ?: "",
-                    title = intent.getStringExtra("event_title") ?: "Event",
-                    startDate = intent.getLongExtra("event_start", 0),
-                    endDate = intent.getLongExtra("event_end", 0),
-                    isAllDay = false,
-                    calendarColor = 0,
-                    calendarId = "",
-                    calendarTitle = "",
-                    meetingUrl = intent.getStringExtra("meeting_url"),
-                )
+                events = ids.indices.map { i ->
+                    EventData(
+                        id = ids[i],
+                        title = titles.getOrElse(i) { "Event" },
+                        startDate = starts.getOrElse(i) { 0 },
+                        endDate = ends.getOrElse(i) { 0 },
+                        meetingUrl = urls.getOrElse(i) { null }?.takeIf { it.isNotEmpty() },
+                    )
+                }
+
                 privacyMode = intent.getBooleanExtra("privacy_mode", false)
-                updateDisplay()
+                urgencyThresholds = UrgencyThresholds(
+                    intent.getDoubleExtra("urgency_imminent", 300.0),
+                    intent.getDoubleExtra("urgency_soon", 900.0),
+                    intent.getDoubleExtra("urgency_approaching", 1800.0),
+                )
+
+                if (intent.action == ACTION_START) {
+                    showFloatingChip()
+                    handler.removeCallbacks(tickRunnable)
+                    handler.post(tickRunnable)
+                } else {
+                    updateDisplay()
+                }
             }
             ACTION_STOP -> {
                 removeFloatingChip()
@@ -106,37 +107,19 @@ class FloatingCountdownService : Service() {
 
         val density = resources.displayMetrics.density
 
-        // Container
-        val container = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             setPadding(
-                (12 * density).toInt(),
-                (6 * density).toInt(),
-                (12 * density).toInt(),
-                (6 * density).toInt(),
+                (14 * density).toInt(), (10 * density).toInt(),
+                (14 * density).toInt(), (10 * density).toInt(),
             )
             background = GradientDrawable().apply {
-                cornerRadius = 20 * density
+                cornerRadius = 16 * density
                 setColor(Color.parseColor("#E0000000"))
             }
-            alpha = 0.92f
+            alpha = 0.94f
         }
-
-        titleView = TextView(this).apply {
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-        }
-
-        countdownView = TextView(this).apply {
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-        }
-
-        container.addView(titleView)
-        container.addView(countdownView)
+        container = root
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -151,31 +134,26 @@ class FloatingCountdownService : Service() {
             y = (80 * density).toInt()
         }
 
-        // Make draggable
-        var initialX = 0
-        var initialY = 0
-        var initialTouchX = 0f
-        var initialTouchY = 0f
+        // Draggable
+        var initialX = 0; var initialY = 0
+        var initialTouchX = 0f; var initialTouchY = 0f
 
-        container.setOnTouchListener { _, event ->
+        root.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
+                    initialX = params.x; initialY = params.y
+                    initialTouchX = event.rawX; initialTouchY = event.rawY
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     params.x = initialX - (event.rawX - initialTouchX).toInt()
                     params.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager?.updateViewLayout(container, params)
+                    windowManager?.updateViewLayout(root, params)
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    // If barely moved, treat as tap -> open calendar
                     if (abs(event.rawX - initialTouchX) < 10 && abs(event.rawY - initialTouchY) < 10) {
-                        currentEvent?.let { evt ->
+                        events.firstOrNull()?.let { evt ->
                             val calIntent = Intent(Intent.ACTION_VIEW).apply {
                                 data = android.net.Uri.parse("content://com.android.calendar/time/${evt.startDate}")
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -189,36 +167,97 @@ class FloatingCountdownService : Service() {
             }
         }
 
-        floatingView = container
-        windowManager?.addView(container, params)
+        floatingView = root
+        windowManager?.addView(root, params)
         updateDisplay()
     }
 
     private fun updateDisplay() {
-        val event = currentEvent ?: return
+        val root = container ?: return
+        root.removeAllViews()
 
-        if (event.endDate <= System.currentTimeMillis()) {
+        val density = resources.displayMetrics.density
+        val now = System.currentTimeMillis()
+
+        // Remove ended events
+        val active = events.filter { it.endDate > now }
+        if (active.isEmpty()) {
             removeFloatingChip()
             stopSelf()
             return
         }
 
-        val remaining = (event.startDate - System.currentTimeMillis()) / 1000.0
-        val countdown = if (remaining <= 0) "Now" else DateFormatters.formatHybridCountdown(remaining)
-        val urgency = UrgencyLevel.from(remaining, urgencyThresholds)
-
-        val title = if (privacyMode) "Busy" else event.title
-        titleView?.text = title
-        countdownView?.text = countdown
-
-        // Urgency color on background
+        // Urgency color from first event
+        val firstRemaining = (active[0].startDate - now) / 1000.0
+        val urgency = UrgencyLevel.from(firstRemaining, urgencyThresholds)
         val bgColor = when (urgency) {
             UrgencyLevel.NORMAL -> "#E0000000"
             UrgencyLevel.APPROACHING -> "#E0795900"
             UrgencyLevel.SOON -> "#E0CC5500"
             UrgencyLevel.IMMINENT, UrgencyLevel.NOW -> "#E0CC0000"
         }
-        (floatingView?.background as? GradientDrawable)?.setColor(Color.parseColor(bgColor))
+        (root.background as? GradientDrawable)?.setColor(Color.parseColor(bgColor))
+
+        // Show up to 3 events
+        for ((i, evt) in active.take(3).withIndex()) {
+            val remaining = (evt.startDate - now) / 1000.0
+            val countdown = if (remaining <= 0) "Now" else DateFormatters.formatHybridCountdown(remaining)
+            val title = if (privacyMode) "Busy" else evt.title
+
+            if (i > 0) {
+                // Separator
+                val sep = View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, (0.5f * density).toInt(),
+                    ).apply { topMargin = (4 * density).toInt(); bottomMargin = (4 * density).toInt() }
+                    setBackgroundColor(Color.parseColor("#40FFFFFF"))
+                }
+                root.addView(sep)
+            }
+
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
+                )
+            }
+
+            val countdownTv = TextView(this).apply {
+                text = countdown
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, if (i == 0) 16f else 13f)
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { marginEnd = (8 * density).toInt() }
+            }
+
+            val titleTv = TextView(this).apply {
+                text = title
+                setTextColor(Color.parseColor(if (i == 0) "#FFFFFF" else "#B0FFFFFF"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, if (i == 0) 12f else 11f)
+                maxLines = 1
+                maxWidth = (140 * density).toInt()
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }
+
+            row.addView(countdownTv)
+            row.addView(titleTv)
+            root.addView(row)
+        }
+
+        // Show "+N more" if there are more
+        if (active.size > 3) {
+            val more = TextView(this).apply {
+                text = "+${active.size - 3} more"
+                setTextColor(Color.parseColor("#80FFFFFF"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = (2 * density).toInt() }
+            }
+            root.addView(more)
+        }
     }
 
     private fun removeFloatingChip() {
@@ -227,8 +266,7 @@ class FloatingCountdownService : Service() {
             windowManager?.removeView(it)
             floatingView = null
         }
-        titleView = null
-        countdownView = null
+        container = null
     }
 
     override fun onDestroy() {
@@ -241,14 +279,17 @@ class FloatingCountdownService : Service() {
         const val ACTION_UPDATE = "com.immedio.toevent.FLOATING_UPDATE"
         const val ACTION_STOP = "com.immedio.toevent.FLOATING_STOP"
 
-        fun startIntent(context: Context, event: Event, privacyMode: Boolean, thresholds: UrgencyThresholds): Intent {
+        fun startIntent(
+            context: Context, events: List<Event>,
+            privacyMode: Boolean, thresholds: UrgencyThresholds,
+        ): Intent {
             return Intent(context, FloatingCountdownService::class.java).apply {
                 action = ACTION_START
-                putExtra("event_id", event.id)
-                putExtra("event_title", event.title)
-                putExtra("event_start", event.startDate)
-                putExtra("event_end", event.endDate)
-                putExtra("meeting_url", event.meetingUrl)
+                putExtra("event_ids", events.map { it.id }.toTypedArray())
+                putExtra("event_titles", events.map { it.title }.toTypedArray())
+                putExtra("event_starts", events.map { it.startDate }.toLongArray())
+                putExtra("event_ends", events.map { it.endDate }.toLongArray())
+                putExtra("event_urls", events.map { it.meetingUrl ?: "" }.toTypedArray())
                 putExtra("privacy_mode", privacyMode)
                 putExtra("urgency_imminent", thresholds.imminent)
                 putExtra("urgency_soon", thresholds.soon)

@@ -83,10 +83,11 @@ fun EventListScreen(
         viewModel.refreshEvents()
     }
 
-    LaunchedEffect(nextEvent, activeSurface, privacyMode, thresholds) {
+    LaunchedEffect(nextEvent, events, activeSurface, privacyMode, thresholds) {
         if (activeSurface.notificationEnabled && nextEvent != null) {
+            val upcoming = events.filter { !it.isAllDay && it.id != nextEvent!!.id }.take(5)
             val intent = com.immedio.toevent.service.CountdownService.startIntent(
-                context, nextEvent!!, privacyMode, thresholds,
+                context, nextEvent!!, privacyMode, thresholds, upcoming,
             )
             context.startForegroundService(intent)
         } else if (!activeSurface.notificationEnabled) {
@@ -95,13 +96,14 @@ fun EventListScreen(
     }
 
     val floatingChipEnabled by viewModel.floatingChipEnabled.collectAsStateWithLifecycle()
-    LaunchedEffect(nextEvent, floatingChipEnabled, privacyMode, thresholds) {
-        if (floatingChipEnabled && nextEvent != null &&
+    LaunchedEffect(events, floatingChipEnabled, privacyMode, thresholds) {
+        val nonAllDay = events.filter { !it.isAllDay }
+        if (floatingChipEnabled && nonAllDay.isNotEmpty() &&
             android.provider.Settings.canDrawOverlays(context)
         ) {
             context.startService(
                 com.immedio.toevent.service.FloatingCountdownService.startIntent(
-                    context, nextEvent!!, privacyMode, thresholds,
+                    context, nonAllDay.take(5), privacyMode, thresholds,
                 ),
             )
         } else if (!floatingChipEnabled) {

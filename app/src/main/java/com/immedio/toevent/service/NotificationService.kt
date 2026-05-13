@@ -64,6 +64,7 @@ class NotificationService @Inject constructor(
         countdownText: String,
         urgencyLevel: UrgencyLevel,
         privacyMode: Boolean,
+        upcomingEvents: List<Event> = emptyList(),
     ): NotificationCompat.Builder {
         val title = if (privacyMode) "Busy" else event.title
 
@@ -87,6 +88,19 @@ class NotificationService @Inject constructor(
             .setContentIntent(openIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
+
+        // Show upcoming events in expanded notification
+        if (upcomingEvents.isNotEmpty()) {
+            val inboxStyle = NotificationCompat.InboxStyle()
+                .setBigContentTitle(title)
+                .setSummaryText("$countdownText")
+            for (upcoming in upcomingEvents.take(5)) {
+                val time = formatTime(upcoming.startDate)
+                val name = if (privacyMode) "Busy" else upcoming.title
+                inboxStyle.addLine("$time  $name")
+            }
+            builder.setStyle(inboxStyle)
+        }
 
         if (event.meetingUrl != null) {
             val joinIntent = PendingIntent.getActivity(
